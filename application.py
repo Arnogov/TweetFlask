@@ -11,9 +11,10 @@ from flask import redirect, url_for
 import os
 # Import de la gestion de BDD à l'aide du framework SQLAlchemy
 from flask_sqlalchemy import SQLAlchemy
+
 # Création de notre application Flask
 app = Flask(__name__)
-# Spécification du chemin de notre fichier de base de données
+# Specification du chemin de notre fichier de Base de données
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 # Création de l'instance de notre base de données
 db = SQLAlchemy(app)
