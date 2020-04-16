@@ -42,8 +42,10 @@ def hello_world():
 # Association de la route "/tweets" à notre fonction display_tweets()
 @app.route('/tweets')
 def display_tweets():
-    # Conversion du template "tweets.html" en lui injectant notre tableau de tweets definit plus haut
-    return render_template('tweets.html', tweets=tweets)
+    # Récupération des tweets de la BDD
+    allTweets = Tweet.query.all()
+    # Conversion du template "tweets.html" en lui injectant notre tableau de tweets
+    return render_template('tweets.html', tweets=allTweets)
 
 # Association de la route "/tweets/<nom d'un auteur>" à notre fonction display_author_tweets()
 # exemple de route : /tweets/John ; la chaine de caractère "John" sera donnée en paramètre de notre fonction
@@ -137,3 +139,5 @@ def edit_tweet(tweet_id):
             tweet.image = url_for('static', filename='uploads/'+f.filename)
         #redirection vers l'affichage de nos tweets.
         return redirect(url_for('display_tweets'))
+
+       
