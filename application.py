@@ -42,24 +42,19 @@ def hello_world():
 # Association de la route "/tweets" à notre fonction display_tweets()
 @app.route('/tweets')
 def display_tweets():
-    # Récupération des tweets de la BDD
+    # récupération des tweets de la BDD.
     allTweets = Tweet.query.all()
-    # Conversion du template "tweets.html" en lui injectant notre tableau de tweets
+    # Conversion du template "tweets.html" en lui injectant notre tableau de tweets récupérés de la BDD
     return render_template('tweets.html', tweets=allTweets)
 
 # Association de la route "/tweets/<nom d'un auteur>" à notre fonction display_author_tweets()
 # exemple de route : /tweets/John ; la chaine de caractère "John" sera donnée en paramètre de notre fonction
 @app.route('/tweets/<author>')
 def display_author_tweets(author):
-    # Création d'un tableau temporaire qui contiendra les tweets de notre auteur
-    authorTweets = []
-    # Boucle pour parcourir les tweets existants
-    for tweet in tweets: 
-        # Comparaison du nom d'auteur entre celui du tweet et celui récupéré dans l'url
-        if tweet.authorName == author :
-            # Si les noms sont identiques, notre tweet appartient à l'auteur souhaité
-            # On l'ajoute donc dans notre tableau temporaire.
-            authorTweets.append(tweet)
+    # Récupération des tweets en filtrant avec l'auteur demandé
+    # Ici SQLAlchemy nous simplifie la tâche
+    # SQL = SELECT * FROM tweet WHERE authorName = author; 
+    authorTweets = Tweet.query.filter_by(authorName=author)
     # Réutilisation du template "tweets.html" en y injectant notre tableau temporaire
     # qui contient les tweets d'un auteur
     return render_template('tweets.html', tweets=authorTweets)
@@ -91,10 +86,13 @@ def display_create_tweet():
             f.save(filepath)
             # création de l'url de l'image pour son affichage (à l'aide de son nom)
             image = url_for('static', filename='uploads/'+f.filename)
-        # Création d'un tweet à l'aide de notre constructeur (qui se trouve dans le fichier tweet.py)
-        tweet = Tweet(authorName, content, image)
-        # Insertion de notre tweet en première position dans notre tableau
-        tweets.insert(0, tweet)
+        # Création d'un tweet à l'aide du constructeur généré par SQLAlchemy 
+        tweet = Tweet(authorName=authorName, content=content, image=image)
+        # Insertion de notre tweet dans session de base de données
+        # Attention, celui-ci n'est pas encore présent dans la base de données
+        db.session.add(tweet)
+        # Sauvegarde de notre session dans la base de données
+        db.session.commit()
         # Redirection vers la liste de nos tweets
         return redirect(url_for('display_tweets'))
 
@@ -139,5 +137,3 @@ def edit_tweet(tweet_id):
             tweet.image = url_for('static', filename='uploads/'+f.filename)
         #redirection vers l'affichage de nos tweets.
         return redirect(url_for('display_tweets'))
-
-       
