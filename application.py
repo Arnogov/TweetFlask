@@ -50,6 +50,14 @@ def display_tweets():
     # Conversion du template "tweets.html" en lui injectant notre tableau de tweets récupérés de la BDD
     return render_template('tweets.html', tweets=allTweets)
 
+    # Association de la route "/users" à notre fonction display_users()
+@app.route('/users')
+def display_users():
+    # récupération des utilisateur de la BDD.
+    allUsers = User.query.all()
+    # Conversion du template "tweets.html" en lui injectant notre tableau de tweets récupérés de la BDD
+    return render_template('users.html', users=allUsers)
+
 # Association de la route "/tweets/<nom d'un auteur>" à notre fonction display_author_tweets()
 # exemple de route : /tweets/John ; la chaine de caractère "John" sera donnée en paramètre de notre fonction
 @app.route('/tweets/<author>')
@@ -99,8 +107,6 @@ def display_create_tweet():
         # Redirection vers la liste de nos tweets
         return redirect(url_for('display_tweets'))
 
-
-
 # Association de la route "/tweets/<identifiant d'un tweet/edit" à notre fonction edit_tweet()
 # Celle ci accepte 2 méthode HTTP : GET & POST
 @app.route('/tweets/<int:tweet_id>/edit', methods=['POST', 'GET'])
@@ -144,15 +150,17 @@ def create_user():
         # On affiche notre formulaire de création 
         return render_template('create_user.html')
     else:
+        # Sinon, notre méthode HTTP est POST
+        # on va donc créer un nouvel utilisateur
         # récupération du nom de l'utilisateur depuis le corps de la requête
         name = request.form['name']
-        # récupération du mail de l'utilisateur
+        # récupération de l'email depuis le corps de la requête
         email = request.form['email']
-        # Création d'une variable password.
+        # récupération du mot de passe depuis le corps de la requête
         password = request.form['password']
         # Création d'un utilisateur à l'aide du constructeur généré par SQLAlchemy 
         user = User(name=name, email=email, password=password)
-        # Insertion de l'utilisateur dans session de base de données
+        # Insertion de notre utilisateur dans session de base de données
         # Attention, celui-ci n'est pas encore présent dans la base de données
         db.session.add(user)
         # Sauvegarde de notre session dans la base de données
