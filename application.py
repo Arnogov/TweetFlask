@@ -4,7 +4,7 @@ from flask import Flask
 from flask import render_template
 # Import de la variable request de Flask
 from flask import request
-# Import d'une fonction pour rediriger la réponse, 
+# Import d'une fonction pour rediriger la réponse,
 # et url_for une méthode pour récupérer l'url avec son nom de fonction
 from flask import redirect, url_for
 # Import de la lib "os" qui permet d'interagir avec notre système d'exploitation
@@ -33,7 +33,6 @@ if not os.path.exists(dbPath):
     db.create_all()
     print("Base de données créée")
 
-
 # Tableau pour stocker nos tweets 
 tweets = []
 
@@ -59,12 +58,12 @@ def display_tweets():
     # Conversion du template "tweets.html" en lui injectant notre tableau de tweets récupérés de la BDD
     return render_template('tweets.html', tweets=allTweets)
 
-# Association de la route "/users" à notre fonction display_users()
+    # Association de la route "/users" à notre fonction display_users()
 @app.route('/users')
 def display_users():
     # récupération des utilisateur de la BDD.
     allUsers = User.query.all()
-    # Conversion du template "users.html" en lui injectant notre tableau de users récupérés de la BDD
+    # Conversion du template "tweets.html" en lui injectant notre tableau de tweets récupérés de la BDD
     return render_template('users.html', users=allUsers)
 
 # Association de la route "/tweets/<nom d'un auteur>" à notre fonction display_author_tweets()
@@ -146,17 +145,16 @@ def edit_tweet(tweet_id):
             f.save(filepath)
             # On modifie l'url de l'image pour son affichage (à l'aide de son nom)
             tweet.image = url_for('static', filename='uploads/'+f.filename)
-        
         # Sauvegarde de notre session dans la base de données
         db.session.commit()
-        #redirection vers l'affichage de nos tweets.
+        # redirection vers l'affichage de nos tweets.
         return redirect(url_for('display_tweets'))
 
 @app.route('/users/create', methods=['POST', 'GET'])
 def create_user():
     # Si la méthode est de type "GET"
     if request.method == 'GET':
-        # On affiche notre formulaire de création 
+        # On affiche notre formulaire de création
         return render_template('create_user.html')
     else:
         # Sinon, notre méthode HTTP est POST
@@ -175,4 +173,29 @@ def create_user():
         # Sauvegarde de notre session dans la base de données
         db.session.commit()
         # Redirection vers la liste de nos tweets
-        return redirect(url_for('display_tweets'))
+        return redirect(url_for('display_users'))
+
+# Association de la route "/users/<identifiant d'un utilisateur/edit" à notre fonction edit_user()
+# Celle ci accepte 2 méthode HTTP : GET & POST
+@app.route('/users/<int:user_id>/edit', methods=['POST', 'GET'])
+def edit_user(user_id):
+    # On récupère l'utilisateur que l'on veut éditer dans notre base de données
+    user = User.query.filter_by(id=user_id).first()
+    # Si on ne trouve pas l'utilisateur
+    if user == None:
+        # On émet une erreur 404 Not Found
+        abort(404)
+    #Si notre méthode HTTP est GET
+    if request.method == 'GET':
+        # On affiche notre formulaire d'édition prérempli avec notre utilisateur
+        return render_template('edit_user.html', user=user)
+    else:
+        # Sinon nous avons une méthode HTTP POST, nous modifions donc notre utilisateur.
+        # modification du nom de l'utilisateur depuis le corps de la requête
+        user.name = request.form['name']
+        # modification de l'email depuis le corps de la requête
+        user.email = request.form['email']
+        # Sauvegarde de notre session dans la base de données
+        db.session.commit()
+        # redirection vers l'affichage de nos utilisateurs.
+        return redirect(url_for('display_users'))
