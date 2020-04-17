@@ -13,6 +13,11 @@ import os
 from flask_sqlalchemy import SQLAlchemy
 # Import d'une fonction flask pour terminer une requête avec un code d'erreur
 from flask import abort
+# Import de la lib requests pour exécuter des requêtes HTTP(S)
+import requests
+# Import de l'API Key de open weather Map depuis un fichier qui n'est pas dans le git
+from variables import openWeatherMapKey
+from datetime import datetime
 
 # Création de notre application Flask
 app = Flask(__name__)
@@ -208,3 +213,30 @@ def edit_user(user_id):
         db.session.commit()
         # redirection vers l'affichage de nos utilisateurs.
         return redirect(url_for('display_users'))
+
+# Association de la route "/weather" à notre fonction weather()
+@app.route('/weather')
+def weather():
+    # création d'un dictionaire des variables que l'on veut mettre dans l'URL
+    params = {'lat': 48.126068, 'lon': -1.215920, 'appid': openWeatherMapKey, 'lang': 'fr', 'units': 'metric'}
+    # Appel de notre URL et ses paramètre avec la lib requests
+    response = requests.get('https://api.openweathermap.org/data/2.5/onecall', params=params)
+    # On convertit le contenu de la réponse JSON en dictionnaire Python (tableau associatif)
+    content = response.json()
+    # On cherche dans la structure du tableau les informations que l'on souhaite récupérer
+    # cf doc OpenWeatherMap : https://openweathermap.org/api/one-call-api#hist_parameter
+    # Récupération du texte de description de la situation météorologique
+    currentWeatherDescription = content["current"]["weather"][0]["description"]
+    # récupération du code de l'icone de la météo courante
+    currentWeatherIcon = content["current"]["weather"][0]["icon"]
+    # récupération de la température courante
+    currentTemp = content['current']['temp']
+    # Ici on va convertir le tableau hourly de OpenWeatherMap dans une structure de données
+    # plus exploitable dans notre template python
+    hourly = []
+    for hour in content['hourly'] :
+        # Conversion du "Timestamp Unix" donné par OpenWeatherMap en datetime pyton
+        time = datetime.fromtimestamp(hour['dt'])
+        # Création d'un dictionnaire Python avec les données souhaitées
+        hourly.append({'icon': hour['weather'][0]['icon'], 'temp': hour['temp'], 'time': time.hour})
+    return render_template('weather.html', currentWeatherDescription=currentWeatherDescription, currentWeatherIcon=currentWeatherIcon, currentTemp=currentTemp, hourly=hourly)
