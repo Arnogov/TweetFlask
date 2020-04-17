@@ -15,19 +15,19 @@
                             width="45" height="40" alt="">
                     </a>
                     <a href="/tweets/create" class="btn btn-primary">Ajouter un tweet</a>
-                    <a href="/users/create" class="btn btn-primary">Créer un utilisateur</a>
+                    <a href="/users/create" class="btn btn-primary">Ajouter un utilisateur</a>
                 </div>
             </nav>
         </div>
     
         <div class="container" style="margin-top: 50px;">
             <div class="col-md-9">
-                <h3>Liste des tweets:</h3>
+                <h3>liste des tweets:</h3>
                 <div id="tweets">
                     {% for tweet in tweets %}
                     <div class="card">
                         <div class="card-header">
-                            <p><a href="/tweets/{{ tweet.authorName }}">{{ tweet.authorName }}</a></p>
+                            <p><a href="/tweets/{{ tweet.user_id }}">{{ tweet.user.name }}</a></p>
                         </div>
                         <div class="card-body">
                             <blockquote class="blockquote mb-0">
@@ -35,7 +35,7 @@
                                 {% if tweet.image %}
                                 <img class="img-fluid" src="{{ tweet.image }}" />
                                 {% endif %}
-                                <footer class="blockquote-footer">Date: {{ tweet.date.strftime("%d/%m/%Y, %H:%M:%S") }} - <a href="/tweets/{{ tweet.id }}/edit">Modifier</a></footer>
+                                <footer class="blockquote-footer">{% if tweet.date %}Date: {{ tweet.date.strftime("%d/%m/%Y, %H:%M:%S") }} - {% endif %}<a href="/tweets/{{ tweet.id }}/edit">Modifier</a></footer>
                             </blockquote>
                         </div>
                     </div>

@@ -66,15 +66,19 @@ def display_users():
     # Conversion du template "tweets.html" en lui injectant notre tableau de tweets récupérés de la BDD
     return render_template('users.html', users=allUsers)
 
-# Association de la route "/tweets/<nom d'un auteur>" à notre fonction display_author_tweets()
-# exemple de route : /tweets/John ; la chaine de caractère "John" sera donnée en paramètre de notre fonction
-@app.route('/tweets/<author>')
-def display_author_tweets(author):
-    # Récupération des tweets en filtrant avec l'auteur demandé
-    # Ici SQLAlchemy nous simplifie la tâche
-    # SQL = SELECT * FROM tweet WHERE authorName = author; 
-    authorTweets = Tweet.query.filter_by(authorName=author)
-    # Réutilisation du template "tweets.html" en y injectant notre tableau temporaire
+# Association de la route "/tweets/<identifiant d'un utilisateur>" à notre fonction display_author_tweets()
+# exemple de route : /tweets/1 ; l'entier "1" sera donnée en paramètre de notre fonction
+@app.route('/tweets/<int:user_id>')
+def display_author_tweets(user_id):
+    # Récupération de l'utilisateur avec son identifiant
+    user = User.query.filter_by(id=user_id).first()
+    # Si l'utilisateur n'existe pas
+    if user == None:
+        # On renvoie une page 404 Not Found
+        abort(404)
+    # Récupération des tweets en utilisant la relation définie dans le modèle
+    authorTweets = user.tweets
+    # Réutilisation du template "tweets.html" en y injectant notre tableau 
     # qui contient les tweets d'un auteur
     return render_template('tweets.html', tweets=authorTweets)
 
@@ -84,13 +88,15 @@ def display_author_tweets(author):
 def display_create_tweet():
     # Si la méthode est de type "GET"
     if request.method == 'GET':
-        # On affiche notre formulaire de création 
-        return render_template('create_tweet.html')
+        #Récupération de la liste des utilisateurs pour la relation tweet<->user
+        users = User.query.all()
+        # On affiche notre formulaire de création en lui donnant la liste des utilisateurs
+        return render_template('create_tweet.html', users=users)
     else:
         # Sinon, notre méthode HTTP est POST
         # on va donc créer un nouveau tweet
-        # récupération du nom de l'auteur depuis le corps de la requête
-        authorName = request.form['author']
+        # récupération de l'identifiant de l'utilisateur depuis le corps de la requête
+        user_id = request.form['user_id']
         # récupération du contenu depuis le corps de la requête
         content = request.form['content']
         # Création d'une variable image par défaut vide.
@@ -106,7 +112,7 @@ def display_create_tweet():
             # création de l'url de l'image pour son affichage (à l'aide de son nom)
             image = url_for('static', filename='uploads/'+f.filename)
         # Création d'un tweet à l'aide du constructeur généré par SQLAlchemy 
-        tweet = Tweet(authorName=authorName, content=content, image=image)
+        tweet = Tweet(user_id=user_id, content=content, image=image)
         # Insertion de notre tweet dans session de base de données
         # Attention, celui-ci n'est pas encore présent dans la base de données
         db.session.add(tweet)
@@ -127,12 +133,15 @@ def edit_tweet(tweet_id):
         abort(404)
     #Si notre méthode HTTP est GET
     if request.method == 'GET':
+        # récupération de nos utilisateurs depuis la base de données
+        users = User.query.all()
         # On affiche notre formulaire d'édition prérempli avec notre tweet
-        return render_template('edit_tweet.html', tweet=tweet)
+        # On donne également la liste des utilisateurs pour les afficher dans le select
+        return render_template('edit_tweet.html', tweet=tweet, users=users)
     else:
         # Sinon nous avons une méthode HTTP POST, nous modifions donc notre tweet.
-        # modification du nom de l'auteur depuis le corps de la requête
-        tweet.authorName = request.form['author']
+        # modification de l'auteur avec son identifiant depuis le corps de la requête
+        tweet.user_id = request.form['user_id']
         # modification du contenu depuis le corps de la requête
         tweet.content = request.form['content']
         # Récupération de l'image depuis le corps de la requête.
