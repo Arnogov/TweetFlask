@@ -1,3 +1,4 @@
+  
 # Import de fonctions depuis le Framework Flask
 from flask import Flask
 # Import d'une fonction pour convertir un template HTML en y injectant des variables python
@@ -17,10 +18,17 @@ from flask import abort
 import requests
 # Import de l'API Key de open weather Map depuis un fichier qui n'est pas dans le git
 from variables import openWeatherMapKey
+# import de la variable secret pour crypter les sessions
+from variables import session_secret
+# Import de la variable de session de Flask
+from flask import session
+
 from datetime import datetime
 
 # Création de notre application Flask
 app = Flask(__name__)
+# On donne un tableau de bytes aléatoire pour crypter nos sessions
+app.secret_key = session_secret
 # Specification du chemin de notre fichier de Base de données
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 # Création de l'instance de notre base de données
@@ -40,7 +48,6 @@ if not os.path.exists(dbPath):
 
 # Tableau pour stocker nos tweets 
 tweets = []
-
 # append = ajouter à la fin
 # Créations de tweets d'exemples
 # tweets.append(Tweet("John", "Ceci est mon premier tweet"))
@@ -60,8 +67,15 @@ def hello_world():
 def display_tweets():
     # récupération des tweets de la BDD.
     allTweets = Tweet.query.all()
+    # création d'une variable user qui peut être vide dans le cas où on est pas connecté
+    user = None
+    # si "user_id" est présent dans notre variable de session
+    if 'user_id' in session:
+        # cela veut dire qu'un utilisateur est connecté
+        # on le récupère donc avec son id dans la base de données
+        user = User.query.filter_by(id=session['user_id']).first()
     # Conversion du template "tweets.html" en lui injectant notre tableau de tweets récupérés de la BDD
-    return render_template('tweets.html', tweets=allTweets)
+    return render_template('tweets.html', tweets=allTweets, user=user)
 
     # Association de la route "/users" à notre fonction display_users()
 @app.route('/users')
@@ -91,6 +105,11 @@ def display_author_tweets(user_id):
 # Celle ci accepte 2 méthode HTTP : GET & POST
 @app.route('/tweets/create', methods=['POST', 'GET'])
 def display_create_tweet():
+    # On autorise la création de tweet qu'aux utilisateurs enregistrés
+    # Si user_id n'est pas dans notre variable session
+    if not 'user_id' in session :
+        # on redirige vers la page de login
+        return redirect(url_for('login'))
     # Si la méthode est de type "GET"
     if request.method == 'GET':
         #Récupération de la liste des utilisateurs pour la relation tweet<->user
@@ -100,8 +119,8 @@ def display_create_tweet():
     else:
         # Sinon, notre méthode HTTP est POST
         # on va donc créer un nouveau tweet
-        # récupération de l'identifiant de l'utilisateur depuis le corps de la requête
-        user_id = request.form['user_id']
+        # récupération de l'identifiant de l'utilisateur depuis la variable de session
+        user_id = session['user_id']
         # récupération du contenu depuis le corps de la requête
         content = request.form['content']
         # Création d'une variable image par défaut vide.
@@ -218,7 +237,7 @@ def edit_user(user_id):
 @app.route('/weather')
 def weather():
     # création d'un dictionaire des variables que l'on veut mettre dans l'URL
-    params = {'lat': 48.126068, 'lon': -1.215920, 'appid': openWeatherMapKey, 'lang': 'fr', 'units': 'metric'}
+    params = {'lat': 48.0833, 'lon': -1.6833, 'appid': openWeatherMapKey, 'lang': 'fr', 'units': 'metric'}
     # Appel de notre URL et ses paramètre avec la lib requests
     response = requests.get('https://api.openweathermap.org/data/2.5/onecall', params=params)
     # On convertit le contenu de la réponse JSON en dictionnaire Python (tableau associatif)
@@ -240,3 +259,33 @@ def weather():
         # Création d'un dictionnaire Python avec les données souhaitées
         hourly.append({'icon': hour['weather'][0]['icon'], 'temp': hour['temp'], 'time': time.hour})
     return render_template('weather.html', currentWeatherDescription=currentWeatherDescription, currentWeatherIcon=currentWeatherIcon, currentTemp=currentTemp, hourly=hourly)
+
+# Association de la route "/login" à notre fonction login()
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # Si on est dans une requête GET
+    if request.method == 'GET':
+        # On affiche simplement le formulaire de Login
+        return render_template('login.html')
+    else:
+        # Sinon cela veut dire qu'on est dans une méthode POST
+        # On récupère l'utilisateur avec son email
+        user = User.query.filter_by(email=request.form['email']).first()
+        # Si notre utilisteur existe et 
+        # Si le mot de passe présent dans le formulaire est le même que celui de la base de données
+        if user != None and user.password == request.form['password'] :
+            # On a réussi notre login, on inscrit donc le l'identifiant de l'utilisateur dans la variable de session
+            session['user_id'] = user.id
+            # on redirige l'utilisateur vers la liste des tweets
+            return redirect(url_for('display_tweets'))
+        else:
+            # Si l'utilisateur n'existe pas ou que les mots de passes ne correspondent pas
+            # on renvoie l'utilisateur vers le formulaire de login.
+            return render_template('login.html', error="Email et/ou mot de passe incorrect")
+
+# Association de la route "/logout" à notre fonction logout()
+@app.route('/logout')
+def logout():
+    # Pour déconnecter l'utilisateur on enlève user_id de la variable session
+    session.pop('user_id', None)
+    return redirect(url_for('display_tweets'))
