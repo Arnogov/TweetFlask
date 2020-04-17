@@ -25,6 +25,15 @@ db = SQLAlchemy(app)
 from tweet import Tweet
 from user import User
 
+# Récupération du chemin du fichier de la base de données
+dbPath = os.path.join(app.root_path, 'data.db')
+# Si le fichier n'existe pas
+if not os.path.exists(dbPath):
+    # Je créer ma base de données
+    db.create_all()
+    print("Base de données créée")
+
+
 # Tableau pour stocker nos tweets 
 tweets = []
 
