@@ -1,4 +1,3 @@
-  
 # Import de fonctions depuis le Framework Flask
 from flask import Flask
 # Import d'une fonction pour convertir un template HTML en y injectant des variables python
@@ -59,7 +58,7 @@ tweets = []
 # Association de la route "/" à notre fonction hello_world()
 @app.route('/')
 def hello_world():
-    # On renvoi à notre navigateur du texte
+    # On renvoie à notre navigateur du texte
     return 'Hello, World!'
 
 # Association de la route "/tweets" à notre fonction display_tweets()
